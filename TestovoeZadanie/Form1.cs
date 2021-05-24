@@ -41,8 +41,16 @@ namespace TestovoeZadanie
         private void EditMenuItem_Click(object sender, EventArgs e)
         {
             var Key = (RegistryKey)(treeView1.SelectedNode.Tag);
-            Form2 form = new Form2(Key, listBox1.SelectedItem.ToString(), (Key.GetValue(listBox1.SelectedItem.ToString())).ToString());
-            form.Show();
+            if (listBox1.SelectedItem != null)
+            {
+                Form2 form = new Form2(Key, listBox1.SelectedItem.ToString(), (Key.GetValue(listBox1.SelectedItem.ToString())).ToString());
+                form.Show();
+            }
+            else
+            {
+                MessageBox.Show("Выберите параметр");
+            }
+
         }
 
         private void AddMenuItem_Click(object sender, EventArgs e)
