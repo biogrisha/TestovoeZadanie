@@ -1,160 +1,65 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
+﻿using Microsoft.Win32;
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TestovoeZadanie.DataModels;
 using TestovoeZadanie.Services;
-using TestovoeZadanie.UserControls;
 
 namespace TestovoeZadanie
 {
     public partial class Form1 : Form
     {
-        FileSystemRepresentation _fileSystemRepreesentation;
         FileLogic _fileLogic;
         TimeWatch _timeWatch;
+        Regedit _regedit;
         public Form1()
         {
             InitializeComponent();
-            _fileSystemRepreesentation = new FileSystemRepresentation(@"C:\Users\User\");
             _fileLogic = new FileLogic();
             _timeWatch = new TimeWatch();
+            _regedit = new Regedit(treeView1, this);
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             ConfigureControls();
-            SetDirectory();
-
+            _regedit.PopulateWithKeys();
         }
         private async void ConfigureControls()
         {
-            flowLayoutForFiles1.ContextMenuStrip = contextMenuStrip1;
-
-            MenuCreateItem.Click += MenuCreateItem_Click;
-            MenuDeleteItem.Click += MenuDeleteItem_Click;
             textBox1.ReadOnly = true;
-            textBox1.Text = await Task.Run(() => _timeWatch.timeTicker());
+            new Thread(SampleFunction).Start();
+
+            DeleteMenuItem.Click += DeleteMenuItem_Click;
+            AddMenuItem.Click += AddMenuItem_Click;
+            EditMenuItem.Click += EditMenuItem_Click;
 
         }
 
-        private void MenuDeleteItem_Click(object sender, EventArgs e)
+        private void EditMenuItem_Click(object sender, EventArgs e)
         {
-            var fileInfo = ((FileIconControl)(flowLayoutForFiles1.SelectedControl))?.Info;
-            try
-            {
-                if (fileInfo != null)
-                {
-                    if (fileInfo is FileInfo)
-                    {
-                        File.Delete(fileInfo.FullName);
-                    }
-                    else if (fileInfo is DirectoryInfo)
-                    {
-                        Directory.Delete(fileInfo.FullName);
-                    }
-
-                    flowLayoutForFiles1.Controls.Remove(flowLayoutForFiles1.SelectedControl);
-                    flowLayoutForFiles1.ClearSelection();
-                }
-                else
-                {
-                    MessageBox.Show("Выберите файл для удаления");
-                }
-            }
-            catch(Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+            var Key = (RegistryKey)(treeView1.SelectedNode.Tag);
+            Form2 form = new Form2(Key, listBox1.SelectedItem.ToString(), (Key.GetValue(listBox1.SelectedItem.ToString())).ToString());
+            form.Show();
         }
 
-        private void MenuCreateItem_Click(object sender, EventArgs e)
+        private void AddMenuItem_Click(object sender, EventArgs e)
         {
-            Directory.CreateDirectory(_fileSystemRepreesentation.DirectoryPath + @"New Folder\");
-            _fileSystemRepreesentation.Reload();
-            SetDirectory();
+            var Key = (RegistryKey)(treeView1.SelectedNode.Tag);
+            Form2 form = new Form2(Key);
+            form.Show();
         }
 
-        private void SetDirectory()
+        private void DeleteMenuItem_Click(object sender, EventArgs e)
         {
-            treeView1.Nodes.Clear();
-            _fileSystemRepreesentation.PopulateControlWithFiles(FileSystemRepresentation.FileSystemEntities.Directory, (fileSystemInfo) =>
+            var Item = (ListViewItemContainer)(listBox1.SelectedItem);
+            if (Item != null)
             {
-                treeView1.Nodes.Add(fileSystemInfo.Name, fileSystemInfo.Name, 1, 1);
-
-            });
-            flowLayoutForFiles1.Controls.Clear();
-            _fileSystemRepreesentation.PopulateControlWithFiles(FileSystemRepresentation.FileSystemEntities.Directory, (fileSystemInfo) =>
-            {
-                FileIconControl userControl = new FileIconControl() { Info = fileSystemInfo, FileImage = Properties.Resources.folder_invoices__v2 };
-                userControl.DoubleClick += UserControl_DoubleClick;
-                flowLayoutForFiles1.Controls.Add(userControl);
-
-            });
-            _fileSystemRepreesentation.PopulateControlWithFiles(FileSystemRepresentation.FileSystemEntities.File, (fileSystemInfo) =>
-            {
-                FileIconControl userControl = new FileIconControl() { Info = fileSystemInfo, FileImage = Properties.Resources.iconfinder_file_227587 };
-                userControl.DoubleClick += UserControl_DoubleClick;
-                flowLayoutForFiles1.Controls.Add(userControl);
-
-            });
-            flowLayoutForFiles1.ClearSelection();
-
-
-        }
-
-        private void UserControl_DoubleClick(object sender, EventArgs e)
-        {
-
-            try
-            {
-                var fileInfo = ((FileIconControl)(flowLayoutForFiles1.SelectedControl)).Info;
-                if (fileInfo is FileInfo)
-                {
-                    Process.Start("C:\\Windows\\System32\\notepad.exe", fileInfo.FullName);
-                    return;
-                }
-                _fileSystemRepreesentation.DirectoryPath = ((FileIconControl)sender).FilePath + @"\";
-                SetDirectory();
+                Item.registryKey.DeleteValue(Item.Name);
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
-        }
-
-        private void treeView1_DoubleClick(object sender, EventArgs e)
-        {
-            try
-            {
-
-                _fileSystemRepreesentation.DirectoryPath = _fileSystemRepreesentation.DirectoryPath + treeView1.SelectedNode.Text + @"\";
-                SetDirectory();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
-        }
-
-        private void BackButton_Click(object sender, EventArgs e)
-        {
-            string filePath = _fileSystemRepreesentation.DirectoryPath;
-            try
-            {
-                string tempPath = filePath;
-                tempPath = tempPath.Substring(0, tempPath.LastIndexOf(@"\"));
-                tempPath = tempPath.Substring(0, tempPath.LastIndexOf(@"\") + 1);
-                _fileSystemRepreesentation.DirectoryPath = tempPath;
-                SetDirectory();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                _fileSystemRepreesentation.DirectoryPath = filePath;
-            }
+            UpdateRegistries(treeView1.SelectedNode);
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -167,5 +72,52 @@ namespace TestovoeZadanie
             textBox1.Text = await Task.Run(() => _timeWatch.timeTicker());
 
         }
+
+        private void treeView1_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            UpdateRegistries(e.Node);
+        }
+
+        private void UpdateRegistries(TreeNode treeNode)
+        {
+            listBox1.Items.Clear();
+            var Key = (RegistryKey)(treeNode.Tag);
+            string[] valueNames = Key?.GetValueNames();
+            if (valueNames != null)
+            {
+                foreach (string name in valueNames)
+                {
+
+                    listBox1.Items.Add(new ListViewItemContainer() { Name = name, registryKey = Key });
+
+                }
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            UpdateRegistries(treeView1.SelectedNode);
+        }
+        public void SetTime(string value)
+        {
+            if (InvokeRequired)
+            {
+                this.Invoke(new Action<string>(SetTime), new object[] { value });
+                return;
+            }
+            textBox1.Text = value;
+        }
+
+        void SampleFunction()
+        {
+            // Gets executed on a seperate thread and 
+            // doesn't block the UI while sleeping
+            while (true)
+            {
+                SetTime(DateTime.Now.ToString());
+                Thread.Sleep(1000);
+            }
+        }
+
     }
 }
