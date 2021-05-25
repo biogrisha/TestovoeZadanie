@@ -75,11 +75,7 @@ namespace TestovoeZadanie
             _fileLogic.WriteToFile();
         }
 
-        private async void textBox1_TextChanged(object sender, EventArgs e)
-        {
-            textBox1.Text = await Task.Run(() => _timeWatch.timeTicker());
-
-        }
+        
 
         private void treeView1_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
