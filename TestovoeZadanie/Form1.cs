@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -27,7 +28,7 @@ namespace TestovoeZadanie
             ConfigureControls();
             _regedit.PopulateWithKeys();
         }
-        private async void ConfigureControls()
+        private void ConfigureControls()
         {
             textBox1.ReadOnly = true;
             new Thread(SampleFunction).Start();
@@ -43,8 +44,23 @@ namespace TestovoeZadanie
             var Key = (RegistryKey)(treeView1.SelectedNode.Tag);
             if (listBox1.SelectedItem != null)
             {
-                Form2 form = new Form2(Key, listBox1.SelectedItem.ToString(), (Key.GetValue(listBox1.SelectedItem.ToString())).ToString());
-                form.Show();
+                if (Key.GetValueKind(listBox1.SelectedItem.ToString()) == RegistryValueKind.Binary)
+                {
+                    var KeyValue = Key.GetValue(listBox1.SelectedItem.ToString());
+                    List<byte> byteArray = new List<byte>((byte[])KeyValue);
+                    EditBinaryValue editByteForm = new EditBinaryValue(Key, listBox1.SelectedItem.ToString(), byteArray);
+                    editByteForm.Show();
+                }
+                else if (Key.GetValueKind(listBox1.SelectedItem.ToString()) == RegistryValueKind.MultiString)
+                {
+                    var KeyValue = Key.GetValue(listBox1.SelectedItem.ToString());
+
+                }
+                else
+                {
+                    Form2 form = new Form2(Key, listBox1.SelectedItem.ToString(), (Key.GetValue(listBox1.SelectedItem.ToString()))?.ToString() ?? string.Empty);
+                    form.Show();
+                }
             }
             else
             {
@@ -75,7 +91,7 @@ namespace TestovoeZadanie
             _fileLogic.WriteToFile();
         }
 
-        
+
 
         private void treeView1_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
