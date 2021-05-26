@@ -53,6 +53,12 @@
     <Compile Include="EditBinaryValue.Designer.cs">
       <DependentUpon>EditBinaryValue.cs</DependentUpon>
     </Compile>
+    <Compile Include="EditMultiStringValue.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="EditMultiStringValue.Designer.cs">
+      <DependentUpon>EditMultiStringValue.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -82,6 +88,9 @@
     </Compile>
     <EmbeddedResource Include="EditBinaryValue.resx">
       <DependentUpon>EditBinaryValue.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="EditMultiStringValue.resx">
+      <DependentUpon>EditMultiStringValue.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>

@@ -54,6 +54,8 @@ namespace TestovoeZadanie
                 else if (Key.GetValueKind(listBox1.SelectedItem.ToString()) == RegistryValueKind.MultiString)
                 {
                     var KeyValue = Key.GetValue(listBox1.SelectedItem.ToString());
+                    EditMultiStringValue form = new EditMultiStringValue(Key, listBox1.SelectedItem.ToString(), new List<string>((string[])KeyValue));
+                    form.Show();
 
                 }
                 else
